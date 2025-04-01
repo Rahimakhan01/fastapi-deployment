@@ -2,27 +2,15 @@ from fastapi import FastAPI, HTTPException
 import joblib
 import pandas as pd
 import os
-import requests
 from pydantic import BaseModel
 
 app = FastAPI()
-REPO_ID = "Rahimakhan/Chronora"
+
 XGB_MODEL_PATH = "xgboost_api_reliability.pkl"
 ANOMALY_MODEL_PATH = "isolation_forest_anomaly.pkl"
 
-def download_model(filename):
-    if not os.path.exists(filename):
-        url = f"https://huggingface.co/{REPO_ID}/resolve/main/{filename}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(filename, "wb") as f:
-                f.write(response.content)
-        else:
-            raise FileNotFoundError(f"Failed to download {filename} from Hugging Face. Check if the file exists.")
-
-# Download models if needed
-download_model(XGB_MODEL_PATH)
-download_model(ANOMALY_MODEL_PATH)
+if not os.path.exists(XGB_MODEL_PATH) or not os.path.exists(ANOMALY_MODEL_PATH):
+    raise FileNotFoundError("Model files are missing. Please upload them.")
 
 xgb_model = joblib.load(XGB_MODEL_PATH)
 anomaly_model = joblib.load(ANOMALY_MODEL_PATH)
@@ -50,4 +38,4 @@ def detect_anomaly(metrics: APIMetrics):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 7860)))
